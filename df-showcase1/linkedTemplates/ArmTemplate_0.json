@@ -139,7 +139,9 @@
 							"url": "https://prod-22.germanywestcentral.logic.azure.com:443/workflows/62f7e68c2d6c4f849057327a80b28d83/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=nwFRSJRv7ax58rKpND3z7USllFByozsVYIUtgniI-8c",
 							"method": "POST",
 							"headers": {},
-							"body": {},
+							"body": {
+								"test": "test"
+							},
 							"timeout": "00:10:00",
 							"reportStatusOnCallBack": false
 						}
@@ -338,7 +340,9 @@
 							"url": "https://prod-05.germanywestcentral.logic.azure.com:443/workflows/2b1ddb00c8694d96803fc9c312cd706d/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=Fa2bH0jymsVwmUoCz31c8s6oY65FP_2-tFNi3_xkpv0",
 							"method": "POST",
 							"headers": {},
-							"body": {},
+							"body": {
+								"test": "test"
+							},
 							"timeout": "00:10:00",
 							"reportStatusOnCallBack": false
 						}

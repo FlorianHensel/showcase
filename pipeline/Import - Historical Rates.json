@@ -50,6 +50,8 @@
 								"value": "@utcNow()",
 								"type": "Expression"
 							},
+							"wildcardFolderPath": "raw_data",
+							"wildcardFileName": "*.json",
 							"enablePartitionDiscovery": false
 						},
 						"formatSettings": {

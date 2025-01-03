@@ -1,0 +1,14 @@
+{
+	"name": "sqldbshowcase",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "sqlshowcase.database.windows.net",
+			"database": "sqldb-showcase",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SystemAssignedManagedIdentity"
+		}
+	}
+}

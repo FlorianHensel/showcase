@@ -1,0 +1,19 @@
+{
+	"name": "showcase_raw_JSON",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "stshowcase1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "raw_data",
+				"fileSystem": "showcase"
+			}
+		},
+		"schema": {}
+	}
+}

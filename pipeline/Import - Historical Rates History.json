@@ -1,0 +1,185 @@
+{
+	"name": "Import - Historical Rates History",
+	"properties": {
+		"activities": [
+			{
+				"name": "TRIGGER - Logic App",
+				"type": "WebHook",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://prod-22.germanywestcentral.logic.azure.com:443/workflows/62f7e68c2d6c4f849057327a80b28d83/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=nwFRSJRv7ax58rKpND3z7USllFByozsVYIUtgniI-8c",
+					"method": "POST",
+					"timeout": "00:10:00",
+					"reportStatusOnCallBack": false
+				}
+			},
+			{
+				"name": "IMPORT - Historical Rates",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "TRIGGER - Logic App",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": false,
+							"modifiedDatetimeStart": {
+								"value": "@adddays(utcNow(), -30)",
+								"type": "Expression"
+							},
+							"modifiedDatetimeEnd": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							},
+							"wildcardFolderPath": "raw_data",
+							"wildcardFileName": "*.json",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": "TRUNCATE TABLE [import].[HistoricalRates];",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "$['timestamp']"
+								},
+								"sink": {
+									"name": "Timestamp",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['low']"
+								},
+								"sink": {
+									"name": "Low",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['high']"
+								},
+								"sink": {
+									"name": "High",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['open']"
+								},
+								"sink": {
+									"name": "Open",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['close']"
+								},
+								"sink": {
+									"name": "Close",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['volume']"
+								},
+								"sink": {
+									"name": "Volume",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "$['product']"
+								},
+								"sink": {
+									"name": "Product",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "showcase_raw_JSON",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "import_HistoricalRates",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "UPDATE - Historical Rates",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "IMPORT - Historical Rates",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[import].[InsertHistoricalRates]"
+				},
+				"linkedServiceName": {
+					"referenceName": "sqldbshowcase",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"folder": {
+			"name": "Showcase"
+		},
+		"annotations": []
+	}
+}

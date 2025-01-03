@@ -123,6 +123,15 @@
 									"name": "Volume",
 									"type": "String"
 								}
+							},
+							{
+								"source": {
+									"path": "$['product']"
+								},
+								"sink": {
+									"name": "Product",
+									"type": "String"
+								}
 							}
 						]
 					}

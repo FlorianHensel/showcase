@@ -1,0 +1,10 @@
+{
+	"name": "stshowcase1",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://stshowcase1.dfs.core.windows.net/"
+		}
+	}
+}

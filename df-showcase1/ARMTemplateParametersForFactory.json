@@ -7,6 +7,12 @@
 		},
 		"stshowcase1_properties_typeProperties_url": {
 			"value": "https://stshowcase1.dfs.core.windows.net/"
+		},
+		"sqldbshowcase_properties_typeProperties_server": {
+			"value": "sqlshowcase.database.windows.net"
+		},
+		"sqldbshowcase_properties_typeProperties_database": {
+			"value": "sqldb-showcase"
 		}
 	}
 }

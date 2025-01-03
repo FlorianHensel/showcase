@@ -1,0 +1,17 @@
+{
+	"name": "Daily",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Hour",
+				"interval": 1,
+				"startTime": "2025-01-03T16:14:00",
+				"timeZone": "W. Europe Standard Time"
+			}
+		}
+	}
+}

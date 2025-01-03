@@ -7,10 +7,6 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "df-showcase1"
 		},
-		"stshowcase1_properties_typeProperties_url": {
-			"type": "string",
-			"defaultValue": "https://stshowcase1.dfs.core.windows.net/"
-		},
 		"sqldbshowcase_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "sqlshowcase.database.windows.net"
@@ -18,6 +14,10 @@
 		"sqldbshowcase_properties_typeProperties_database": {
 			"type": "string",
 			"defaultValue": "sqldb-showcase"
+		},
+		"stshowcase1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stshowcase1.dfs.core.windows.net/"
 		}
 	},
 	"variables": {
@@ -25,40 +25,202 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/stshowcase1')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"name": "[concat(parameters('factoryName'), '/Import - Rates History')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"annotations": [],
-				"type": "AzureBlobFS",
-				"typeProperties": {
-					"url": "[parameters('stshowcase1_properties_typeProperties_url')]"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/showcase_raw_JSON')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "stshowcase1",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "Json",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"folderPath": "raw_data",
-						"fileSystem": "showcase"
+				"activities": [
+					{
+						"name": "TRIGGER - Logic App",
+						"type": "WebHook",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": "https://prod-22.germanywestcentral.logic.azure.com:443/workflows/62f7e68c2d6c4f849057327a80b28d83/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=nwFRSJRv7ax58rKpND3z7USllFByozsVYIUtgniI-8c",
+							"method": "POST",
+							"headers": {},
+							"body": {},
+							"timeout": "00:10:00",
+							"reportStatusOnCallBack": false
+						}
+					},
+					{
+						"name": "IMPORT - Historical Rates",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "TRIGGER - Logic App",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": false,
+									"modifiedDatetimeStart": {
+										"value": "@adddays(utcNow(), -30)",
+										"type": "Expression"
+									},
+									"modifiedDatetimeEnd": {
+										"value": "@utcNow()",
+										"type": "Expression"
+									},
+									"wildcardFolderPath": "raw_data",
+									"wildcardFileName": "*.json",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE [import].[HistoricalRates];",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['timestamp']"
+										},
+										"sink": {
+											"name": "Timestamp",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['low']"
+										},
+										"sink": {
+											"name": "Low",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['high']"
+										},
+										"sink": {
+											"name": "High",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['open']"
+										},
+										"sink": {
+											"name": "Open",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['close']"
+										},
+										"sink": {
+											"name": "Close",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['volume']"
+										},
+										"sink": {
+											"name": "Volume",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "$['product']"
+										},
+										"sink": {
+											"name": "Product",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "showcase_raw_JSON",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "import_HistoricalRates",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "UPDATE - Historical Rates",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "IMPORT - Historical Rates",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[import].[InsertHistoricalRates]"
+						},
+						"linkedServiceName": {
+							"referenceName": "sqldbshowcase",
+							"type": "LinkedServiceReference"
+						}
 					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
 				},
-				"schema": {}
+				"folder": {
+					"name": "Showcase"
+				},
+				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/stshowcase1')]"
+				"[concat(variables('factoryId'), '/datasets/showcase_raw_JSON')]",
+				"[concat(variables('factoryId'), '/datasets/import_HistoricalRates')]",
+				"[concat(variables('factoryId'), '/linkedServices/sqldbshowcase')]"
 			]
 		},
 		{
@@ -261,23 +423,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/sqldbshowcase')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureSqlDatabase",
-				"typeProperties": {
-					"server": "[parameters('sqldbshowcase_properties_typeProperties_server')]",
-					"database": "[parameters('sqldbshowcase_properties_typeProperties_database')]",
-					"encrypt": "mandatory",
-					"trustServerCertificate": false,
-					"authenticationType": "SystemAssignedManagedIdentity"
-				}
-			},
-			"dependsOn": []
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/import_HistoricalRates')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -320,203 +465,58 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/Import - Rates History')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
+			"name": "[concat(parameters('factoryName'), '/showcase_raw_JSON')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"activities": [
-					{
-						"name": "TRIGGER - Logic App",
-						"type": "WebHook",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"url": "https://prod-22.germanywestcentral.logic.azure.com:443/workflows/62f7e68c2d6c4f849057327a80b28d83/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=nwFRSJRv7ax58rKpND3z7USllFByozsVYIUtgniI-8c",
-							"method": "POST",
-							"headers": {},
-							"body": {},
-							"timeout": "00:10:00",
-							"reportStatusOnCallBack": false
-						}
-					},
-					{
-						"name": "IMPORT - Historical Rates",
-						"type": "Copy",
-						"dependsOn": [
-							{
-								"activity": "TRIGGER - Logic App",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "JsonSource",
-								"storeSettings": {
-									"type": "AzureBlobFSReadSettings",
-									"recursive": false,
-									"modifiedDatetimeStart": {
-										"value": "@adddays(utcNow(), -30)",
-										"type": "Expression"
-									},
-									"modifiedDatetimeEnd": {
-										"value": "@utcNow()",
-										"type": "Expression"
-									},
-									"wildcardFolderPath": "raw_data",
-									"wildcardFileName": "*.json",
-									"enablePartitionDiscovery": false
-								},
-								"formatSettings": {
-									"type": "JsonReadSettings"
-								}
-							},
-							"sink": {
-								"type": "AzureSqlSink",
-								"preCopyScript": "TRUNCATE TABLE [import].[HistoricalRates];",
-								"writeBehavior": "insert",
-								"sqlWriterUseTableLock": false,
-								"disableMetricsCollection": false
-							},
-							"enableStaging": false,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"path": "$['timestamp']"
-										},
-										"sink": {
-											"name": "Timestamp",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['low']"
-										},
-										"sink": {
-											"name": "Low",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['high']"
-										},
-										"sink": {
-											"name": "High",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['open']"
-										},
-										"sink": {
-											"name": "Open",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['close']"
-										},
-										"sink": {
-											"name": "Close",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['volume']"
-										},
-										"sink": {
-											"name": "Volume",
-											"type": "String"
-										}
-									},
-									{
-										"source": {
-											"path": "$['product']"
-										},
-										"sink": {
-											"name": "Product",
-											"type": "String"
-										}
-									}
-								]
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "showcase_raw_JSON",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "import_HistoricalRates",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						]
-					},
-					{
-						"name": "UPDATE - Historical Rates",
-						"type": "SqlServerStoredProcedure",
-						"dependsOn": [
-							{
-								"activity": "IMPORT - Historical Rates",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"storedProcedureName": "[[import].[InsertHistoricalRates]"
-						},
-						"linkedServiceName": {
-							"referenceName": "sqldbshowcase",
-							"type": "LinkedServiceReference"
-						}
+				"linkedServiceName": {
+					"referenceName": "stshowcase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "raw_data",
+						"fileSystem": "showcase"
 					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
 				},
-				"folder": {
-					"name": "Showcase"
-				},
-				"annotations": []
+				"schema": {}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/showcase_raw_JSON')]",
-				"[concat(variables('factoryId'), '/datasets/import_HistoricalRates')]",
-				"[concat(variables('factoryId'), '/linkedServices/sqldbshowcase')]"
+				"[concat(variables('factoryId'), '/linkedServices/stshowcase1')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sqldbshowcase')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('sqldbshowcase_properties_typeProperties_server')]",
+					"database": "[parameters('sqldbshowcase_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SystemAssignedManagedIdentity"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/stshowcase1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('stshowcase1_properties_typeProperties_url')]"
+				}
+			},
+			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/Daily')]",
@@ -537,10 +537,18 @@
 				"type": "ScheduleTrigger",
 				"typeProperties": {
 					"recurrence": {
-						"frequency": "Hour",
+						"frequency": "Day",
 						"interval": 1,
 						"startTime": "2025-01-03T16:14:00",
-						"timeZone": "W. Europe Standard Time"
+						"timeZone": "W. Europe Standard Time",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								8
+							]
+						}
 					}
 				}
 			},

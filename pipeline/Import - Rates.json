@@ -46,14 +46,6 @@
 						"storeSettings": {
 							"type": "AzureBlobFSReadSettings",
 							"recursive": false,
-							"modifiedDatetimeStart": {
-								"value": "@adddays(utcNow(), -30)",
-								"type": "Expression"
-							},
-							"modifiedDatetimeEnd": {
-								"value": "@utcNow()",
-								"type": "Expression"
-							},
 							"wildcardFolderPath": "raw_data",
 							"wildcardFileName": "*.json",
 							"enablePartitionDiscovery": false

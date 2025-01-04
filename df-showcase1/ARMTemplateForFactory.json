@@ -277,7 +277,7 @@
 									"type": "AzureBlobFSReadSettings",
 									"recursive": false,
 									"modifiedDatetimeStart": {
-										"value": "@adddays(utcNow(), -30)",
+										"value": "@adddays(utcNow(), -1)",
 										"type": "Expression"
 									},
 									"modifiedDatetimeEnd": {

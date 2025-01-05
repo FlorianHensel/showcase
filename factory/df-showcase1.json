@@ -1,9 +1,0 @@
-{
-	"name": "df-showcase1",
-	"location": "germanywestcentral",
-	"identity": {
-		"type": "SystemAssigned",
-		"principalId": "25aeccb4-65ca-4349-ba2a-dcb319f59eec",
-		"tenantId": "51447fcb-7408-43ee-a9d5-93788a1981e1"
-	}
-}

@@ -313,7 +313,8 @@
 				"folder": {
 					"name": "Showcase"
 				},
-				"annotations": []
+				"annotations": [],
+				"lastPublishTime": "2025-01-03T17:11:33Z"
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/showcase_raw_JSON')]",
@@ -514,7 +515,8 @@
 				"folder": {
 					"name": "Showcase"
 				},
-				"annotations": []
+				"annotations": [],
+				"lastPublishTime": "2025-01-05T07:30:46Z"
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/showcase_raw_JSON')]",
